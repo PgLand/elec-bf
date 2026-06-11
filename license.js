@@ -1,6 +1,7 @@
 // WARI — activation par clé de licence (une clé = un appareil via Google Sheet)
 const LICENSE_STORE = 'wari_license_v1';
 const DEVICE_KEY = 'wari_device_id';
+const WARI_VERSION = '4';
 const $ = s => document.querySelector(s);
 
 let readyCallbacks = [];
@@ -45,6 +46,11 @@ function slugToLabel(slug) {
   return slug.charAt(0) + slug.slice(1).toLowerCase();
 }
 
+function cleanReturnUrl() {
+  const path = location.pathname + location.hash;
+  history.replaceState({}, '', path);
+}
+
 async function licenseSignature(slug) {
   const data = new TextEncoder().encode(`${getSecret()}:${slug}`);
   const buf = await crypto.subtle.digest('SHA-256', data);
@@ -66,65 +72,51 @@ async function parseLicenseKey(key) {
   return { slug, clientName: slugToLabel(slug), key: normalized };
 }
 
-function callActivationServer(params) {
-  return new Promise((resolve, reject) => {
-    const base = getActivationUrl();
-    const callbackName = `wariJsonp_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
-    const search = new URLSearchParams({ ...params, callback: callbackName });
-
-    const timeout = setTimeout(() => {
-      cleanup();
-      reject(new Error('Délai dépassé. Vérifiez votre connexion internet.'));
-    }, 25000);
-
-    let script;
-
-    function cleanup() {
-      clearTimeout(timeout);
-      delete window[callbackName];
-      if (script && script.parentNode) script.parentNode.removeChild(script);
-    }
-
-    window[callbackName] = (data) => {
-      cleanup();
-      resolve(data);
-    };
-
-    script = document.createElement('script');
-    script.src = `${base}?${search.toString()}`;
-    script.async = true;
-    script.onerror = () => {
-      cleanup();
-      if (location.protocol === 'file:') {
-        reject(new Error('Ouvrez WARI via votre lien GitHub Pages (pas le fichier local).'));
-      } else {
-        reject(new Error(
-          'Connexion Google impossible. Redéployez Apps Script (nouvelle version) avec le Code.gs mis à jour.'
-        ));
-      }
-    };
-    document.head.appendChild(script);
+function redirectToGoogleActivate(key, deviceId) {
+  const base = getActivationUrl();
+  const returnUrl = location.origin + location.pathname;
+  const params = new URLSearchParams({
+    action: 'activate',
+    key,
+    deviceId,
+    return: returnUrl
   });
+  location.assign(`${base}?${params.toString()}`);
 }
 
-async function verifyOnline(key, deviceId) {
-  const base = getActivationUrl();
-  if (!base) return { ok: true };
+function handleActivationReturn() {
+  const params = new URLSearchParams(location.search);
+  const error = params.get('wari_error');
+  const key = params.get('wari_key');
+  const client = params.get('wari_client');
+  const device = params.get('wari_device');
 
-  if (!navigator.onLine) {
-    throw new Error('Connexion internet requise pour activer WARI (première utilisation).');
+  if (!error && !key) return null;
+
+  cleanReturnUrl();
+
+  if (error) {
+    return { ok: false, error: decodeURIComponent(error.replace(/\+/g, ' ')) };
   }
 
-  if (location.protocol === 'file:') {
-    throw new Error('Ouvrez WARI via le lien https://… (GitHub Pages), pas en double-cliquant sur index.html.');
+  if (device !== getDeviceId()) {
+    return { ok: false, error: 'Erreur de sécurité lors du retour. Réessayez.' };
   }
 
-  const data = await callActivationServer({ action: 'activate', key, deviceId });
-
-  if (!data.ok) {
-    throw new Error(data.error || 'Activation refusée par le serveur.');
+  const m = key.toUpperCase().match(/^WARI-([A-Z0-9]{3,16})-[A-F0-9]{8}$/);
+  if (!m) {
+    return { ok: false, error: 'Clé reçue invalide.' };
   }
-  return data;
+
+  const record = {
+    key: key.toUpperCase(),
+    slug: m[1],
+    clientName: client ? decodeURIComponent(client.replace(/\+/g, ' ')) : slugToLabel(m[1]),
+    deviceId: device,
+    activatedAt: Date.now()
+  };
+  saveLicense(record);
+  return { ok: true, record };
 }
 
 function isActivated() {
@@ -189,17 +181,21 @@ async function activateLicense(rawKey) {
     return { ok: true };
   }
 
-  let online = { ok: true };
-  try {
-    online = await verifyOnline(parsed.key, deviceId);
-  } catch (err) {
-    return { ok: false, error: err.message || 'Activation impossible.' };
+  if (requiresOnlineActivation()) {
+    if (!navigator.onLine) {
+      return { ok: false, error: 'Connexion internet requise pour activer WARI.' };
+    }
+    if (location.protocol === 'file:') {
+      return { ok: false, error: 'Ouvrez WARI via votre lien GitHub Pages (https://…).' };
+    }
+    redirectToGoogleActivate(parsed.key, deviceId);
+    return { ok: true, redirecting: true };
   }
 
   const record = {
     key: parsed.key,
     slug: parsed.slug,
-    clientName: online.clientName || parsed.clientName,
+    clientName: parsed.clientName,
     deviceId,
     activatedAt: Date.now()
   };
@@ -223,6 +219,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const form = $('#lockForm');
   if (!form) return;
 
+  const returned = handleActivationReturn();
+  if (returned?.ok) {
+    hideActivateScreen();
+    updateLicenseUI(returned.record);
+    notifyReady();
+    return;
+  }
+
   const lic = getLicense();
   if (isActivated()) {
     hideActivateScreen();
@@ -231,9 +235,9 @@ document.addEventListener('DOMContentLoaded', () => {
   } else {
     $('#lockTitle').textContent = 'Activer WARI';
     const ver = $('#lockVersion');
-    if (ver) ver.textContent = 'Version 3 — si vous voyez « Failed to fetch », videz le cache du navigateur.';
+    if (ver) ver.textContent = `Version ${WARI_VERSION} — activation via Google (redirection)`;
     const onlineNote = requiresOnlineActivation()
-      ? ' Connexion internet requise pour la première activation.'
+      ? ' Internet requis : vous serez redirigé vers Google puis de retour ici.'
       : '';
     $('#lockHint').textContent =
       `Entrez la clé personnelle remise par votre vendeur. Une clé = un seul téléphone.${onlineNote}`;
@@ -242,6 +246,7 @@ document.addEventListener('DOMContentLoaded', () => {
     $('#lockPassword').autocomplete = 'off';
     $('#lockPassword').placeholder = 'Ex. WARI-BOUTIQUEKO-1A2B3C4D';
     showActivateScreen();
+    if (returned?.error) setActivateError(returned.error);
   }
 
   form.addEventListener('submit', async (e) => {
@@ -256,6 +261,7 @@ document.addEventListener('DOMContentLoaded', () => {
     btn.disabled = true;
     btn.textContent = 'Activation…';
     const result = await activateLicense(key);
+    if (result.redirecting) return;
     btn.disabled = false;
     btn.textContent = 'Activer';
     if (!result.ok) setActivateError(result.error);

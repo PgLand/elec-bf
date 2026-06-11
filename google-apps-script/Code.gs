@@ -14,6 +14,21 @@ var SHEET_NAME = 'licenses';
 
 function doGet(e) {
   var params = e.parameter || {};
+  var action = String(params.action || '').toLowerCase();
+  var returnUrl = String(params.return || '');
+
+  if (action === 'activate' && returnUrl && isValidReturnUrl_(returnUrl)) {
+    var activateResult = activateLicense_(
+      String(params.key || '').trim().toUpperCase(),
+      String(params.deviceId || '').trim()
+    );
+    var target = buildReturnUrl_(returnUrl, activateResult, params);
+    return redirectPage_(
+      target,
+      activateResult.ok ? 'Activation réussie. Retour vers WARI…' : 'Erreur. Retour vers WARI…'
+    );
+  }
+
   var result = handleRequest_(params);
   var json = JSON.stringify(result);
   var callback = String(params.callback || '');
@@ -25,6 +40,32 @@ function doGet(e) {
   }
 
   return respond_(result);
+}
+
+function isValidReturnUrl_(url) {
+  return /^https:\/\/[a-z0-9.-]+/i.test(url) && url.length < 500;
+}
+
+function buildReturnUrl_(returnBase, result, params) {
+  var sep = returnBase.indexOf('?') >= 0 ? '&' : '?';
+  if (result.ok) {
+    return returnBase + sep +
+      'wari_key=' + encodeURIComponent(String(params.key || '').trim().toUpperCase()) +
+      '&wari_client=' + encodeURIComponent(result.clientName || '') +
+      '&wari_device=' + encodeURIComponent(String(params.deviceId || '').trim());
+  }
+  return returnBase + sep + 'wari_error=' + encodeURIComponent(result.error || 'Erreur activation');
+}
+
+function redirectPage_(targetUrl, message) {
+  return HtmlService.createHtmlOutput(
+    '<!DOCTYPE html><html><head><meta charset="utf-8">' +
+    '<meta name="viewport" content="width=device-width,initial-scale=1">' +
+    '<title>WARI</title></head><body style="font-family:sans-serif;text-align:center;padding:40px">' +
+    '<p>' + (message || 'Redirection…') + '</p>' +
+    '<script>location.replace(' + JSON.stringify(targetUrl) + ');</script>' +
+    '</body></html>'
+  ).setTitle('WARI').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
 function doPost(e) {
