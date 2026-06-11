@@ -2,7 +2,7 @@
  * WARI — Serveur d'activation des licences (Google Apps Script)
  *
  * INSTALLATION :
- * 1. Créez une Google Sheet (voir SETUP.txt)
+ * 1. Créez une Google Sheet (voir SETUP.txt) — onglet nommé : licence
  * 2. Extensions → Apps Script → collez ce fichier → Enregistrer
  * 3. Déployer → Nouvelle version → Application web
  *    - Exécuter en tant que : Moi
@@ -100,10 +100,22 @@ function handleRequest_(p) {
 
 function getLicenseSheet_() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName(SHEET_NAME);
+  var sheet = ss.getSheetByName('licence')
+    || ss.getSheetByName('licences')
+    || ss.getSheetByName('licenses');
+
   if (!sheet) {
-    throw new Error('Feuille "' + SHEET_NAME + '" introuvable.');
+    var sheets = ss.getSheets();
+    if (sheets.length > 0) {
+      sheet = sheets[0];
+    }
   }
+
+  if (!sheet) {
+    sheet = ss.insertSheet('licence');
+    sheet.appendRow(['key', 'client_name', 'device_id', 'activated_at', 'status']);
+  }
+
   return sheet;
 }
 
