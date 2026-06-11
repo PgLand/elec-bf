@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>WARI — Gestion commerciale d'appareils électroniques</title>
+<meta name="description" content="Logiciel de gestion commerciale (stocks, commandes, clients) pour boutiques d'appareils électroniques au Burkina Faso." />
+<meta name="theme-color" content="#2563eb" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="WARI" />
+<meta name="format-detection" content="telephone=no" />
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="icon" href="icons/icon-192.png" type="image/png" />
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+<script src="analytics-config.js"></script>
+<script src="analytics.js"></script>
+</head>
+<body class="app-locked">
+<div id="lockScreen" class="lock-screen">
+  <div class="lock-card">
+    <div class="lock-logo">⚡</div>
+    <h2 id="lockTitle">Activer WARI</h2>
+    <p id="lockHint" class="muted">Entrez la clé de licence que votre vendeur vous a remise.</p>
+    <form id="lockForm" class="lock-form">
+      <input type="text" id="lockPassword" autocomplete="off" spellcheck="false" placeholder="Ex. WARI-BOUTIQUEKO-1A2B3C4D" required />
+      <p id="lockError" class="lock-error" hidden></p>
+      <button type="submit" class="btn primary" id="lockSubmit">Activer</button>
+    </form>
+  </div>
+</div>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="logo">⚡</div>
+    <div>
+      <h1>WARI</h1>
+      <p class="subtitle">Gestion commerciale — Appareils électroniques</p>
+    </div>
+  </div>
+  <div class="topbar-actions">
+    <span id="licenseBadge" class="badge badge-license" hidden title="Licence client"></span>
+    <span class="badge badge-currency">FCFA</span>
+    <span id="dateNow" class="date-chip"></span>
+  </div>
+</header>
+
+<nav class="tabs-wrap">
+  <div class="tabs">
+    <button class="tab active" data-tab="dashboard"><span class="tab-icon">📊</span> Tableau de bord</button>
+    <button class="tab" data-tab="stock"><span class="tab-icon">📦</span> Stock</button>
+    <button class="tab" data-tab="commandes"><span class="tab-icon">🧾</span> Ventes</button>
+    <button class="tab" data-tab="clients"><span class="tab-icon">👥</span> Clients</button>
+    <button class="tab" data-tab="parametres"><span class="tab-icon">⚙️</span> Paramètres</button>
+  </div>
+</nav>
+
+<main class="container">
+
+  <!-- DASHBOARD -->
+  <section id="dashboard" class="view active">
+    <div class="grid grid-kpi">
+      <div class="card stat stat-blue">
+        <div class="stat-icon">📦</div>
+        <div class="stat-body">
+          <div class="stat-label">Produits en stock</div>
+          <div class="stat-value" id="kpiProduits">0</div>
+        </div>
+      </div>
+      <div class="card stat stat-indigo">
+        <div class="stat-icon">💰</div>
+        <div class="stat-body">
+          <div class="stat-label">Valeur du stock</div>
+          <div class="stat-value" id="kpiValeur">0 FCFA</div>
+        </div>
+      </div>
+      <div class="card stat stat-emerald">
+        <div class="stat-icon">🛒</div>
+        <div class="stat-body">
+          <div class="stat-label">Ventes du mois</div>
+          <div class="stat-value" id="kpiVentes">0 FCFA</div>
+        </div>
+      </div>
+      <div class="card stat stat-amber">
+        <div class="stat-icon">📈</div>
+        <div class="stat-body">
+          <div class="stat-label">Bénéfice du mois</div>
+          <div class="stat-value" id="kpiBenefice">0 FCFA</div>
+        </div>
+      </div>
+      <div class="card stat stat-violet">
+        <div class="stat-icon">👥</div>
+        <div class="stat-body">
+          <div class="stat-label">Clients</div>
+          <div class="stat-value" id="kpiClients">0</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-2">
+      <div class="card">
+        <h3> Stock </h3>
+        <ul id="lowStockList" class="list"></ul>
+      </div>
+      <div class="card">
+        <h3>🕒 Dernières ventes</h3>
+        <ul id="lastSalesList" class="list"></ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- STOCK -->
+  <section id="stock" class="view">
+    <div class="card">
+      <h3 id="formProduitTitle">Ajouter un produit</h3>
+      <form id="formProduit" class="form-grid">
+        <input name="nom" placeholder="Nom (ex: Téléphone Tecno Spark)" required />
+        <select name="categorie" required>
+          <option value="">— Catégorie —</option>
+          <option>Téléphone</option>
+          <option>Téléviseur</option>
+          <option>Ordinateur</option>
+          <option>Accessoire</option>
+          <option>Audio</option>
+          <option>Autre</option>
+        </select>
+        <input name="marque" placeholder="Marque (Samsung, Tecno, Hisense...)" />
+        <input name="dateAchat" id="stockDateAchat" type="date" required />
+        <input name="prixVentePrevu" type="number" min="0" step="1" placeholder="Prix de vente prévu / unité (FCFA)" required />
+        <input name="prixAchatUnitaire" id="stockPrixUnitaire" type="number" min="0" step="1" placeholder="Prix d'achat / unité (FCFA)" required />
+        <input name="prixAchatTotal" id="stockPrixTotal" type="number" min="0" step="1" placeholder="Prix d'achat total (FCFA)" required />
+        <input name="quantite" id="stockQuantite" type="number" min="1" placeholder="Quantité" required />
+        <button class="btn primary" type="submit" id="btnProduitSubmit">Ajouter au stock</button>
+        <button class="btn" type="button" id="btnProduitCancel" hidden>Annuler</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h3>Produits</h3>
+        <input id="searchStock" class="search" placeholder="Rechercher…" />
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>Nom</th><th>Date achat</th><th>Catégorie</th><th>Marque</th>
+            <th>P. vente prévu</th><th>P. achat / unité</th><th>P. achat total</th><th>Qté</th><th></th>
+          </tr></thead>
+          <tbody id="tbodyStock"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- COMMANDES / VENTES -->
+  <section id="commandes" class="view">
+    <div class="card">
+      <h3 id="formVenteTitle">Nouvelle vente</h3>
+      <form id="formVente" class="form-grid">
+        <select name="clientId" id="venteClient" required>
+          <option value="">— Choisir un client —</option>
+        </select>
+        <select name="produitId" id="venteProduit" required>
+          <option value="">— Produit —</option>
+        </select>
+        <input name="prixVente" id="ventePrixVente" type="number" min="0" placeholder="Prix de vente / unité (FCFA)" required />
+        <input name="quantite" type="number" min="1" value="1" required />
+        <input name="remise" type="number" min="0" value="0" placeholder="Remise sur la vente (FCFA)" />
+        <select name="paiement" required>
+          <option value="Espèces">Espèces</option>
+          <option value="Mobile Money (Orange)">Mobile Money (Orange)</option>
+          <option value="Mobile Money (Moov)">Mobile Money (Moov)</option>
+          <option value="Wave">Wave</option>
+          <option value="Crédit">Crédit</option>
+        </select>
+        <div class="vente-preview">
+          <span>Sous-total : <strong id="venteSousTotal">—</strong></span>
+          <span>Remise : <strong id="venteRemiseAff">—</strong></span>
+          <span>Total client : <strong id="venteTotal">—</strong></span>
+          <span>Bénéfice : <strong id="venteBenefice" class="benefice-preview">—</strong></span>
+        </div>
+        <button class="btn primary" type="submit" id="btnVenteSubmit">Enregistrer la vente</button>
+        <button class="btn" type="button" id="btnVenteCancel" hidden>Annuler</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h3>Historique des ventes</h3>
+        <input id="searchVentes" class="search" placeholder="Rechercher…" />
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>Date</th><th>Produit</th><th>Qté</th><th>Client</th>
+            <th>P. vente</th><th>Remise</th><th>Paiement</th><th>Total</th><th>Bénéfice</th><th></th>
+          </tr></thead>
+          <tbody id="tbodyVentes"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- CLIENTS -->
+  <section id="clients" class="view">
+    <div class="card">
+      <h3 id="formClientTitle">Ajouter un client</h3>
+      <form id="formClient" class="form-grid">
+        <input name="nom" placeholder="Nom complet" required />
+        <input name="telephone" placeholder="Téléphone (+226…)" />
+        <select name="ville" required>
+          <option value="">— Ville —</option>
+          <option>Ouagadougou</option>
+          <option>Bobo-Dioulasso</option>
+          <option>Koudougou</option>
+          <option>Ouahigouya</option>
+          <option>Banfora</option>
+          <option>Dédougou</option>
+          <option>Kaya</option>
+          <option>Tenkodogo</option>
+          <option>Fada N'gourma</option>
+          <option>Dori</option>
+          <option>Gaoua</option>
+          <option>Manga</option>
+          <option>Houndé</option>
+          <option>Autre</option>
+        </select>
+        <select name="type" required>
+          <option value="">— Type de client —</option>
+          <option>Particulier</option>
+          <option>Revendeur</option>
+          <option>Entreprise</option>
+          <option>Grossiste</option>
+        </select>
+        <button class="btn primary" type="submit" id="btnClientSubmit">Ajouter</button>
+        <button class="btn" type="button" id="btnClientCancel" hidden>Annuler</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h3>Clients</h3>
+        <input id="searchClients" class="search" placeholder="Rechercher…" />
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>Nom</th><th>Téléphone</th><th>Ville</th><th>Type</th><th>Achats</th><th></th>
+          </tr></thead>
+          <tbody id="tbodyClients"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- PARAMETRES -->
+  <section id="parametres" class="view">
+    <div class="card" id="installCard">
+      <h3>📲 Installer l'application</h3>
+      <p class="muted">Installez WARI sur l'écran d'accueil pour un accès rapide, comme une application native (iOS &amp; Android).</p>
+      <p id="installStatus" class="install-status muted"></p>
+      <button class="btn primary" type="button" id="btnInstall" hidden>Installer WARI</button>
+      <div class="install-help">
+        <details>
+          <summary>Instructions d'installation</summary>
+          <ul class="install-steps">
+            <li><strong>Android (Chrome)</strong> — Menu ⋮ → « Ajouter à l'écran d'accueil » ou bouton ci-dessus.</li>
+            <li><strong>iPhone / iPad (Safari)</strong> — Bouton Partager ↑ → « Sur l'écran d'accueil ».</li>
+            <li><strong>Ordinateur (Chrome / Edge)</strong> — Icône d'installation dans la barre d'adresse.</li>
+          </ul>
+        </details>
+      </div>
+    </div>
+    <div class="card">
+      <h3>🔑 Votre licence</h3>
+      <p class="muted">WARI est activé pour une seule boutique et un seul téléphone. Ne partagez pas votre clé — elle sera refusée sur un autre appareil.</p>
+      <p id="licenseInfo" class="license-info muted">—</p>
+      <details class="security-note">
+        <summary>Pourquoi une clé ?</summary>
+        <p class="muted">Chaque client reçoit une clé unique. À la première activation, WARI vérifie en ligne que la clé n'est pas déjà utilisée sur un autre téléphone. Si vous changez d'appareil, contactez votre vendeur.</p>
+      </details>
+    </div>
+    <div class="card">
+      <h3>Données</h3>
+      <p class="muted">Toutes les données sont enregistrées localement (hors ligne) dans ce navigateur.</p>
+      <div class="row">
+        <button class="btn" id="btnExport">⬇️ Exporter (JSON)</button>
+        <label class="btn">
+          ⬆️ Importer (JSON)
+          <input type="file" id="fileImport" accept="application/json" hidden />
+        </label>
+        <button class="btn danger" id="btnReset">🗑️ Réinitialiser</button>
+      </div>
+    </div>
+    <div class="card">
+      <h3>À propos</h3>
+      <p>WARI — version 1.0</p>
+    </div>
+  </section>
+
+</main>
+
+<script src="license-config.js"></script>
+<script src="license.js"></script>
+<script src="app.js"></script>
+<script src="pwa.js"></script>
+</body>
+</html>

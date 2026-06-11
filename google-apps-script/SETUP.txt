@@ -1,0 +1,103 @@
+═══════════════════════════════════════════════════════════════
+  WARI — Guide d'installation (Google Sheet + GitHub + WhatsApp)
+═══════════════════════════════════════════════════════════════
+
+ÉTAPE 1 — CRÉER LA GOOGLE SHEET (liste des licences)
+────────────────────────────────────────────────────
+1. Allez sur https://sheets.google.com → Nouvelle feuille
+2. Renommez l'onglet en : licenses
+3. Ligne 1 (en-têtes) :
+   key | client_name | device_id | activated_at | status
+4. Exemple ligne 2 (après keygen.py) :
+   WARI-BOUTIQUEKOFI-0B7D7B73 | Boutique Kofi | | | pending
+
+   → device_id reste VIDE tant que le client n'a pas activé
+   → status = pending puis active automatiquement
+
+
+ÉTAPE 2 — INSTALLER LE SCRIPT GOOGLE
+────────────────────────────────────
+1. Dans la feuille : Extensions → Apps Script
+2. Supprimez le contenu par défaut
+3. Collez tout le fichier Code.gs de ce dossier
+4. Enregistrer (Ctrl+S), nom du projet : WARI Activation
+5. Déployer → Nouvelle version → Type : Application web
+   - Description : WARI v1
+   - Exécuter en tant que : Moi
+   - Qui a accès : Toute personne disposant du lien
+6. Cliquez Déployer → copiez l'URL (se termine par /exec)
+   Exemple : https://script.google.com/macros/s/AKfycb.../exec
+
+7. Test dans le navigateur :
+   VOTRE_URL?action=ping
+   → doit afficher : {"ok":true,"message":"WARI activation server OK"}
+
+
+ÉTAPE 3 — CONFIGURER WARI AVANT GITHUB
+──────────────────────────────────────
+1. Ouvrez license-config.js
+2. Remplacez activationUrl par votre URL /exec :
+
+   window.WARI_LICENSE = {
+     secret: 'CHANGEZ-CE-SECRET-WARI-2026',
+     activationUrl: 'https://script.google.com/macros/s/VOTRE_ID/exec'
+   };
+
+3. Changez aussi secret (pour keygen.py)
+
+
+ÉTAPE 4 — GÉNÉRER UNE CLÉ POUR CHAQUE CLIENT
+────────────────────────────────────────────
+   python keygen.py "Boutique Kofi"
+
+→ Copiez la clé dans la Google Sheet (nouvelle ligne)
+→ Envoyez la clé au client par WhatsApp (message séparé du lien)
+
+
+ÉTAPE 5 — PUBLIER SUR GITHUB PAGES
+──────────────────────────────────
+1. Créez un compte GitHub si besoin : https://github.com
+2. Créez un dépôt (ex. wari-bf) — PUBLIC ou PRIVATE (Pages fonctionne)
+3. Uploadez tous les fichiers SAUF :
+   - keygen.py          (gardez sur VOTRE PC uniquement)
+   - google-apps-script/ (optionnel, pas nécessaire en ligne)
+
+4. Sur GitHub : Settings → Pages
+   - Source : Deploy from a branch
+   - Branch : main → / (root)
+   - Save
+
+5. Attendez 1-2 min. Votre URL sera :
+   https://VOTRE-PSEUDO.github.io/wari-bf/
+
+   (remplacez wari-bf par le nom de votre dépôt)
+
+
+ÉTAPE 6 — ENVOYER AU CLIENT PAR WHATSAPP
+────────────────────────────────────────
+Message 1 (lien) :
+   Bonjour, voici WARI pour gérer votre boutique :
+   https://VOTRE-PSEUDO.github.io/wari-bf/
+
+Message 2 (clé personnelle — NE PAS partager) :
+   Votre clé personnelle : WARI-BOUTIQUEKOFI-XXXXXXXX
+   Installez l'app sur VOTRE téléphone uniquement.
+   Connexion internet requise pour la première activation.
+
+Sur iPhone : Safari → Partager → Sur l'écran d'accueil
+Sur Android : Chrome → Menu → Ajouter à l'écran d'accueil
+
+
+RÉVOQUER UN CLIENT (optionnel)
+──────────────────────────────
+Dans la Google Sheet, mettez status = revoked pour sa clé.
+
+
+DÉPANNAGE
+─────────
+• "Clé non reconnue" → la clé n'est pas dans la Sheet
+• "Déjà activée sur un autre téléphone" → quelqu'un a partagé la clé
+• "Connexion internet requise" → le client doit activer en ligne une fois
+• Apps Script ne répond pas → vérifiez le déploiement "Toute personne"
+
+═══════════════════════════════════════════════════════════════
