@@ -1,4 +1,4 @@
-const CACHE = 'wari-v4';
+const CACHE = 'wari-v5';
 const NETWORK_FIRST = ['license.js', 'license-config.js', 'app.js', 'sw.js'];
 
 const ASSETS = [

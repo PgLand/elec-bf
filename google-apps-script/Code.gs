@@ -58,12 +58,23 @@ function buildReturnUrl_(returnBase, result, params) {
 }
 
 function redirectPage_(targetUrl, message) {
+  var escaped = targetUrl
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;');
   return HtmlService.createHtmlOutput(
     '<!DOCTYPE html><html><head><meta charset="utf-8">' +
     '<meta name="viewport" content="width=device-width,initial-scale=1">' +
     '<title>WARI</title></head><body style="font-family:sans-serif;text-align:center;padding:40px">' +
     '<p>' + (message || 'Redirection…') + '</p>' +
-    '<script>location.replace(' + JSON.stringify(targetUrl) + ');</script>' +
+    '<p><a id="back" target="_top" href="' + escaped + '" ' +
+    'style="display:inline-block;padding:12px 24px;background:#2563eb;color:#fff;' +
+    'border-radius:8px;text-decoration:none;font-weight:bold">Revenir à WARI</a></p>' +
+    '<script>' +
+    'var u=' + JSON.stringify(targetUrl) + ';' +
+    'try{window.top.location.href=u;}catch(e){}' +
+    'setTimeout(function(){var a=document.getElementById("back");if(a)a.click();},400);' +
+    '</script>' +
     '</body></html>'
   ).setTitle('WARI').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }

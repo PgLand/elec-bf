@@ -1,8 +1,14 @@
 // WARI — activation par clé de licence (une clé = un appareil via Google Sheet)
 const LICENSE_STORE = 'wari_license_v1';
 const DEVICE_KEY = 'wari_device_id';
-const WARI_VERSION = '4';
+const WARI_VERSION = '5';
 const $ = s => document.querySelector(s);
+
+// Si WARI revient dans un cadre Google après l'activation, on sort du cadre
+// pour retrouver le vrai navigateur (et le bon stockage local).
+if (window.top !== window.self) {
+  try { window.top.location.href = location.href; } catch (e) { /* bloqué par le navigateur */ }
+}
 
 let readyCallbacks = [];
 
@@ -100,7 +106,10 @@ function handleActivationReturn() {
   }
 
   if (device !== getDeviceId()) {
-    return { ok: false, error: 'Erreur de sécurité lors du retour. Réessayez.' };
+    return {
+      ok: false,
+      error: 'Le retour ne vient pas du même navigateur. Réessayez dans le même navigateur (pas en navigation privée).'
+    };
   }
 
   const m = key.toUpperCase().match(/^WARI-([A-Z0-9]{3,16})-[A-F0-9]{8}$/);
