@@ -13,7 +13,18 @@
 var SHEET_NAME = 'licenses';
 
 function doGet(e) {
-  return respond_(handleRequest_(e.parameter || {}));
+  var params = e.parameter || {};
+  var result = handleRequest_(params);
+  var json = JSON.stringify(result);
+  var callback = String(params.callback || '');
+
+  if (/^[a-zA-Z0-9_]+$/.test(callback)) {
+    return ContentService
+      .createTextOutput(callback + '(' + json + ');')
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+  }
+
+  return respond_(result);
 }
 
 function doPost(e) {

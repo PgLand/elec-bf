@@ -1,4 +1,6 @@
-const CACHE = 'wari-v1';
+const CACHE = 'wari-v3';
+const NETWORK_FIRST = ['license.js', 'license-config.js', 'app.js', 'sw.js'];
+
 const ASSETS = [
   './',
   './index.html',
@@ -29,10 +31,30 @@ self.addEventListener('activate', (event) => {
   );
 });
 
+function isNetworkFirst(url) {
+  const path = url.pathname.split('/').pop() || '';
+  return NETWORK_FIRST.some((name) => path.startsWith(name));
+}
+
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
+
+  if (isNetworkFirst(url)) {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(CACHE).then((cache) => cache.put(event.request, clone));
+          }
+          return response;
+        })
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
 
   event.respondWith(
     caches.match(event.request).then((cached) => {

@@ -66,13 +66,45 @@ async function parseLicenseKey(key) {
   return { slug, clientName: slugToLabel(slug), key: normalized };
 }
 
-async function parseJsonResponse(res) {
-  const text = await res.text();
-  try {
-    return JSON.parse(text);
-  } catch {
-    throw new Error('Réponse serveur invalide. Vérifiez l\'URL d\'activation.');
-  }
+function callActivationServer(params) {
+  return new Promise((resolve, reject) => {
+    const base = getActivationUrl();
+    const callbackName = `wariJsonp_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+    const search = new URLSearchParams({ ...params, callback: callbackName });
+
+    const timeout = setTimeout(() => {
+      cleanup();
+      reject(new Error('Délai dépassé. Vérifiez votre connexion internet.'));
+    }, 25000);
+
+    let script;
+
+    function cleanup() {
+      clearTimeout(timeout);
+      delete window[callbackName];
+      if (script && script.parentNode) script.parentNode.removeChild(script);
+    }
+
+    window[callbackName] = (data) => {
+      cleanup();
+      resolve(data);
+    };
+
+    script = document.createElement('script');
+    script.src = `${base}?${search.toString()}`;
+    script.async = true;
+    script.onerror = () => {
+      cleanup();
+      if (location.protocol === 'file:') {
+        reject(new Error('Ouvrez WARI via votre lien GitHub Pages (pas le fichier local).'));
+      } else {
+        reject(new Error(
+          'Connexion Google impossible. Redéployez Apps Script (nouvelle version) avec le Code.gs mis à jour.'
+        ));
+      }
+    };
+    document.head.appendChild(script);
+  });
 }
 
 async function verifyOnline(key, deviceId) {
@@ -83,9 +115,11 @@ async function verifyOnline(key, deviceId) {
     throw new Error('Connexion internet requise pour activer WARI (première utilisation).');
   }
 
-  const params = new URLSearchParams({ action: 'activate', key, deviceId });
-  const res = await fetch(`${base}?${params.toString()}`, { cache: 'no-store' });
-  const data = await parseJsonResponse(res);
+  if (location.protocol === 'file:') {
+    throw new Error('Ouvrez WARI via le lien https://… (GitHub Pages), pas en double-cliquant sur index.html.');
+  }
+
+  const data = await callActivationServer({ action: 'activate', key, deviceId });
 
   if (!data.ok) {
     throw new Error(data.error || 'Activation refusée par le serveur.');
@@ -196,6 +230,8 @@ document.addEventListener('DOMContentLoaded', () => {
     notifyReady();
   } else {
     $('#lockTitle').textContent = 'Activer WARI';
+    const ver = $('#lockVersion');
+    if (ver) ver.textContent = 'Version 3 — si vous voyez « Failed to fetch », videz le cache du navigateur.';
     const onlineNote = requiresOnlineActivation()
       ? ' Connexion internet requise pour la première activation.'
       : '';

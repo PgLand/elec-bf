@@ -630,6 +630,12 @@ body.app-locked { overflow: hidden; }
   color: var(--danger);
 }
 
+.lock-version {
+  margin: 0;
+  font-size: 11px;
+  text-align: center;
+}
+
 .pin-form { margin-top: 16px; }
 .pin-status { margin: 10px 0 0; font-size: 13px; font-weight: 600; }
 .pin-status.ok { color: var(--success); }
