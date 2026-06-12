@@ -1,7 +1,8 @@
 // WARI — activation par clé de licence (une clé = un appareil via Google Sheet)
+(() => {
 const LICENSE_STORE = 'wari_license_v1';
 const DEVICE_KEY = 'wari_device_id';
-const WARI_VERSION = '5';
+const WARI_VERSION = '6';
 const $ = s => document.querySelector(s);
 
 // Si WARI revient dans un cadre Google après l'activation, on sort du cadre
@@ -277,3 +278,4 @@ document.addEventListener('DOMContentLoaded', () => {
     else $('#lockPassword').value = '';
   });
 });
+})();

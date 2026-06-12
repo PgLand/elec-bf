@@ -569,6 +569,8 @@ tbody tr:hover td { background: #f8fafc; }
 /* ── Lock screen ── */
 body.app-locked { overflow: hidden; }
 
+.lock-screen[hidden] { display: none !important; }
+
 .lock-screen {
   position: fixed;
   inset: 0;

@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (btn) btn.addEventListener('click', installApp);
 
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {
-    navigator.serviceWorker.register('./sw.js?v=5').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=6').catch(() => {});
   }
 
   updateInstallUI();
