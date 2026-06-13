@@ -2,8 +2,16 @@
 (() => {
 const LICENSE_STORE = 'wari_license_v1';
 const DEVICE_KEY = 'wari_device_id';
-const WARI_VERSION = '6';
+const PENDING_DEVICE_KEY = 'wari_pending_device';
+const WARI_VERSION = '7';
 const $ = s => document.querySelector(s);
+
+// Au retour Google : resynchroniser l'appareil AVANT tout (évite un nouvel ID aléatoire)
+(function syncDeviceFromReturnUrl() {
+  const params = new URLSearchParams(location.search);
+  const device = params.get('wari_device');
+  if (device) localStorage.setItem(DEVICE_KEY, device);
+})();
 
 // Si WARI revient dans un cadre Google après l'activation, on sort du cadre
 // pour retrouver le vrai navigateur (et le bon stockage local).
@@ -80,6 +88,7 @@ async function parseLicenseKey(key) {
 }
 
 function redirectToGoogleActivate(key, deviceId) {
+  sessionStorage.setItem(PENDING_DEVICE_KEY, deviceId);
   const base = getActivationUrl();
   const returnUrl = location.origin + location.pathname;
   const params = new URLSearchParams({
@@ -106,12 +115,13 @@ function handleActivationReturn() {
     return { ok: false, error: decodeURIComponent(error.replace(/\+/g, ' ')) };
   }
 
-  if (device !== getDeviceId()) {
-    return {
-      ok: false,
-      error: 'Le retour ne vient pas du même navigateur. Réessayez dans le même navigateur (pas en navigation privée).'
-    };
+  if (!device) {
+    return { ok: false, error: 'Retour d\'activation incomplet. Réessayez.' };
   }
+
+  // Google a validé cet appareil — on aligne le stockage local dessus
+  localStorage.setItem(DEVICE_KEY, device);
+  sessionStorage.removeItem(PENDING_DEVICE_KEY);
 
   const m = key.toUpperCase().match(/^WARI-([A-Z0-9]{3,16})-[A-F0-9]{8}$/);
   if (!m) {
@@ -131,7 +141,12 @@ function handleActivationReturn() {
 
 function isActivated() {
   const lic = getLicense();
-  return !!(lic && lic.key && lic.deviceId === getDeviceId());
+  if (!lic || !lic.key || !lic.deviceId) return false;
+  const current = localStorage.getItem(DEVICE_KEY);
+  if (current !== lic.deviceId) {
+    localStorage.setItem(DEVICE_KEY, lic.deviceId);
+  }
+  return true;
 }
 
 function showActivateScreen() {
