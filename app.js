@@ -472,6 +472,12 @@ function renderDashboard() {
   $('#kpiBenefice').style.color = beneficeMois >= 0 ? 'var(--success)' : 'var(--danger)';
   $('#kpiClients').textContent = state.clients.length;
 
+  const greet = $('#dashboardGreeting');
+  if (greet) {
+    const h = now.getHours();
+    greet.textContent = (h < 12 ? 'Bonjour' : h < 18 ? 'Bon après-midi' : 'Bonsoir') + ' 👋';
+  }
+
   const low = state.produits.filter(p => p.quantite <= 3);
   $('#lowStockList').innerHTML = low.length
     ? low.map(p => `<li><span>${p.nom}</span><span class="pill ${p.quantite===0?'low':'warn'}">${p.quantite}</span></li>`).join('')

@@ -17,7 +17,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="styles.css?v=7" />
+<link rel="stylesheet" href="styles.css?v=8" />
 <script src="analytics-config.js"></script>
 <script src="analytics.js"></script>
 </head>
@@ -65,6 +65,13 @@
 
   <!-- DASHBOARD -->
   <section id="dashboard" class="view active">
+    <div class="view-header">
+      <div>
+        <p class="view-greeting" id="dashboardGreeting">Bonjour 👋</p>
+        <h2 class="view-title">Tableau de bord</h2>
+        <p class="view-subtitle">Vue d'ensemble de votre boutique</p>
+      </div>
+    </div>
     <div class="grid grid-kpi">
       <div class="card stat stat-blue">
         <div class="stat-icon">📦</div>
@@ -104,11 +111,11 @@
     </div>
 
     <div class="grid grid-2">
-      <div class="card">
-        <h3> Stock </h3>
+      <div class="card card-alert">
+        <h3>⚠️ Stock faible</h3>
         <ul id="lowStockList" class="list"></ul>
       </div>
-      <div class="card">
+      <div class="card card-sales">
         <h3>🕒 Dernières ventes</h3>
         <ul id="lastSalesList" class="list"></ul>
       </div>
@@ -117,7 +124,11 @@
 
   <!-- STOCK -->
   <section id="stock" class="view">
-    <div class="card">
+    <div class="view-header compact">
+      <h2 class="view-title">Stock</h2>
+      <p class="view-subtitle">Gérez vos produits et inventaire</p>
+    </div>
+    <div class="card card-form">
       <h3 id="formProduitTitle">Ajouter un produit</h3>
       <form id="formProduit" class="form-grid">
         <input name="nom" placeholder="Nom (ex: Téléphone Tecno Spark)" required />
@@ -160,7 +171,11 @@
 
   <!-- COMMANDES / VENTES -->
   <section id="commandes" class="view">
-    <div class="card">
+    <div class="view-header compact">
+      <h2 class="view-title">Ventes</h2>
+      <p class="view-subtitle">Enregistrez et suivez vos transactions</p>
+    </div>
+    <div class="card card-form">
       <h3 id="formVenteTitle">Nouvelle vente</h3>
       <form id="formVente" class="form-grid">
         <select name="clientId" id="venteClient" required>
@@ -209,7 +224,11 @@
 
   <!-- CLIENTS -->
   <section id="clients" class="view">
-    <div class="card">
+    <div class="view-header compact">
+      <h2 class="view-title">Clients</h2>
+      <p class="view-subtitle">Votre carnet de clients et revendeurs</p>
+    </div>
+    <div class="card card-form">
       <h3 id="formClientTitle">Ajouter un client</h3>
       <form id="formClient" class="form-grid">
         <input name="nom" placeholder="Nom complet" required />
@@ -261,6 +280,10 @@
 
   <!-- PARAMETRES -->
   <section id="parametres" class="view">
+    <div class="view-header compact">
+      <h2 class="view-title">Paramètres</h2>
+      <p class="view-subtitle">Installation, licence et données</p>
+    </div>
     <div class="card" id="installCard">
       <h3>📲 Installer l'application</h3>
       <p class="muted">Installez WARI sur l'écran d'accueil pour un accès rapide, comme une application native (iOS &amp; Android).</p>
